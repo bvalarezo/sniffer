@@ -2,11 +2,11 @@
 
 import sys, getopt
 from scapy.all import *
-
+from parser import parse
 #PREDEFINED 
 OPTIONS = "i:r:h"
-TRACEFILE = ""
-INTERFACE = ""
+TRACEFILE = None
+INTERFACE = None
 EXPRESSION = ""
 #
 
@@ -27,24 +27,18 @@ def main(argc, argv):
         elif opt == "-r":
             TRACEFILE = optarg
         elif opt == "-h":
-            print("Sniffer: A websniffer used to parse HTTP and HTTPS traffic")
+            print("Sniffer: A websniffer used to parse HTTP and TLS traffic")
             usage(argv[0], 0)
         else:
             usage(argv[0])
-    if not bool(INTERFACE) ^ bool(TRACEFILE):
-        print("Sniffer: Unable to sniff from both tracefile and live packets")
-        usage(argv[0])
-    if INTERFACE:
-        INTERFACE = "default"
-    EXPRESSION = args
-    if TRACEFILE:
-        pass
-        #read from file
-    else:
-        pass
-        #read from stream
-    print(INTERFACE + ", " + TRACEFILE)
-    sys.exit(0)
+    EXPRESSION = " ".join(map(str, args))
+    try:
+        retval = parse(iface=INTERFACE, pcap=TRACEFILE, expression=EXPRESSION)
+    except PermissionError as e:
+        print(e)
+        print("Sniffer: Please run %s with root permissions" % argv[0])
+        retval = 1
+    sys.exit(retval)
 
 if __name__ == "__main__":
     main(len(sys.argv), sys.argv)
