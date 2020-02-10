@@ -3,6 +3,7 @@
 from scapy.all import *
 from scapy.layers.http import HTTPRequest
 from scapy.layers.tls.handshake import TLSClientHello
+from scapy.layers.tls.extensions import ServerName
 import cryptography
 
 def parse(iface=None, pcap=None, expression=None):
@@ -32,35 +33,33 @@ def parse_interface(iface, expression):
     #capture ctrl-c ?
     return retval
 
-def decode_HTTP(packet):
-    retval = 0
-    print(packet[HTTPRequest])
-    return retval
-    #takes in packet
-    #parse if GET or POST
-    #print destination name
-    #date timestamp HTTP SRC_IP:PORT -> DST_IP:PORT domain_name HTTP_METHOD location
-    #2020-02-04 13:14:33.224487 HTTP 192.168.190.128:57234 -> 23.185.0.4:80 www.cs.stonybrook.edu GET /research/NationalSecurityInstitute
-    #return string
+def decode_HTTP(pkt):
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S.{}".format(repr(pkt.time).split('.')[1][:6]), time.localtime(pkt.time))
+    src_ip = str(pkt[IP].src)
+    sport = str(pkt[TCP].sport)
+    dst_ip = str(pkt[IP].dst)
+    dport = str(pkt[TCP].dport)
+    host = str(pkt[HTTPRequest].Host.decode())
+    method = str(pkt[HTTPRequest].Method.decode())
+    path = str(pkt[HTTPRequest].Path.decode())
+    return timestamp + " HTTP " + src_ip + ":" + sport + " -> " + dst_ip + ":" + dport + " " + host + " " + method + " " + path 
 
-def decode_TLS(packet):
-    retval = 0
-    print("tls found")
-    print(packet)
-    return retval
-    #takes in packet
-    #parse Client Hello
-    #print TLS version
-    #print destination
-    #date timestamp TLS version SRC_IP:PORT -> DST_IP:PORT domain_name
+def decode_TLS(pkt):
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S.{}".format(repr(pkt.time).split('.')[1][:6]), time.localtime(pkt.time))
+    version = str(pkt[TLSClientHello].version) #convert hex to str
+    src_ip = str(pkt[IP].src)
+    sport = str(pkt[TCP].sport)
+    dst_ip = str(pkt[IP].dst)
+    dport = str(pkt[TCP].dport)
+    server_name = str(pkt[ServerName]) #convert bytes to str
+    return timestamp + " TLS " + version + " " + src_ip + ":" + sport + " -> " + dst_ip + ":" + dport + " " + server_name
     #2020-02-04 13:14:24.494045 TLS v1.3 192.168.190.128:59330 -> 104.244.42.193:443 twitter.com
-    #return string
 
 def identify_pkt(packet):
     if packet.haslayer(HTTPRequest):
-        decode_HTTP(packet)
+        print(decode_HTTP(packet))
     elif packet.haslayer(TLSClientHello): #help here
-        decode_TLS(packet)
+        print(decode_TLS(packet))
     else:
         pass
 
