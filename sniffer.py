@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 
 import sys, getopt
 from parser import parse
@@ -10,7 +10,7 @@ EXPRESSION = ""
 #
 
 def usage(name, status=2):
-    print("Usage: %s [-i interface] [-r tracefile] expression" % name)
+    print("Usage: %s [-i interface] [-r tracefile] expression" % name, file=sys.stderr)
     sys.exit(status)
 
 def main(argc, argv):
@@ -34,8 +34,13 @@ def main(argc, argv):
     try:
         retval = parse(iface=INTERFACE, pcap=TRACEFILE, expression=EXPRESSION)
     except PermissionError as e:
-        print(e)
-        print("Sniffer: Please run %s with root permissions" % argv[0])
+        print(e, file=sys.stderr)
+        print("Sniffer: Please run %s with root permissions" % argv[0], file=sys.stderr)
+        retval = 1
+    except BaseException as e:
+        print("Sniffer: Fatal error has occured...", file=sys.stderr)
+        print(e, file=sys.stderr)
+        print("Exiting...", file=sys.stderr)
         retval = 1
     sys.exit(retval)
 

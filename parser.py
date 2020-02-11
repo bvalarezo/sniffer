@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/env python3
 
 from scapy.all import *
 from scapy.layers.http import HTTPRequest
@@ -10,29 +10,28 @@ def parse(iface=None, pcap=None, expression=None):
     load_layer('http')
     load_layer('tls')
     retval = 0
-    try:
-        if pcap:
-            parse_file(pcap, expression)
-        elif iface or not pcap:
-            parse_interface(iface, expression)
-        else:
-            retval = 1
-    except BaseException as e:
-        print(e)
+    if pcap:
+        parse_file(pcap, expression)
+    elif iface or not pcap:
+        parse_interface(iface, expression)
+    else:
         retval = 1
     return retval
 
 def parse_file(pcap, expression):
     print("Reading packets from pcap...")
     sniff(offline=pcap, filter=expression, prn=identify_pkt)
+    print("Finished reading packets from pcap.")
 
 def parse_interface(iface, expression):
     print("Reading packets from interface...")
-    if iface:
-        sniff(filter=expression, prn=identify_pkt, iface=iface)
-    else:
-        sniff(filter=expression, prn=identify_pkt)
-    #capture ctrl-c ?
+    try:
+        if iface:
+            sniff(filter=expression, prn=identify_pkt, iface=iface)
+        else:
+            sniff(filter=expression, prn=identify_pkt)
+    except KeyboardInterrupt:
+        print("Finished reading packets from interface.")
 
 def decode_HTTP(pkt):
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S.{}".format(repr(pkt.time).split('.')[1][:6]), time.localtime(pkt.time))
@@ -47,7 +46,7 @@ def decode_HTTP(pkt):
 
 def decode_TLS(pkt):
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S.{}".format(repr(pkt.time).split('.')[1][:6]), time.localtime(pkt.time))
-    version = get_tls_version(pkt[TLSClientHello].version)
+    version = get_tls_version(pkt)
     src_ip = str(pkt[IP].src)
     sport = str(pkt[TCP].sport)
     dst_ip = str(pkt[IP].dst)
@@ -59,17 +58,20 @@ def decode_TLS(pkt):
 def identify_pkt(packet):
     if packet.haslayer(HTTPRequest):
         print(decode_HTTP(packet))
-    elif packet.haslayer(TLSClientHello) and packet.haslayer(ServerName): #help here
+    elif packet.haslayer(TLSClientHello) and packet.haslayer(ServerName):
         print(decode_TLS(packet))
     else:
         pass
 
-def get_tls_version(n):
+def get_tls_version(pkt):
     ret = "v???"
+    n = max(pkt[TLS_Ext_SupportedVersion_CH].versions) if pkt.haslayer(TLS_Ext_SupportedVersion_CH) else pkt[TLSClientHello].version
     if n == 769:
         ret = "v1.0"
     elif n == 770:
         ret = "v1.1"
     elif n == 771:
         ret = "v1.2"
+    elif n == 772:
+        ret = "v1.3"
     return ret
