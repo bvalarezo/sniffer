@@ -1,7 +1,6 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 import sys, getopt
-from scapy.all import *
 from parser import parse
 #PREDEFINED 
 OPTIONS = "i:r:h"
