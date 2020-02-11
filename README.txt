@@ -25,6 +25,7 @@ If neither flag is specified, sniffer.py will sniff packets from a network inter
   
 Example output:
 
+$ sudo python3 sniffer.py
 Reading packets from interface...
 2020-02-11 00:03:55.924103 TLS v1.3 10.0.3.15:57560 -> 172.217.7.4:443 www.google.com
 2020-02-11 00:04:22.175044 TLS v1.3 10.0.3.15:48282 -> 23.185.0.2:443 www.cs.stonybrook.edu
